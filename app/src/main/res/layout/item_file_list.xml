@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp"
+    android:background="#FFFFFF"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:id="@+id/file_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="5dp"
+        android:scaleType="centerCrop" />
+
+    <RelativeLayout
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- 文件名称 -->
+        <TextView
+            android:id="@+id/file_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:textColor="@color/black_333"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="17sp" />
+
+        <!-- 文件最后修改时间 -->
+        <TextView
+            android:id="@+id/file_last_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_alignParentBottom="true"
+            android:textSize="13sp" />
+
+        <!-- 文件大小 -->
+        <TextView
+            android:id="@+id/file_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="20dp"
+            android:layout_toEndOf="@id/file_last_time"
+            android:textSize="13sp" />
+
+        <!-- 这家伙目前仅用来占位，把布局撑到最右边，使之可以点击空白部分 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="20dp"
+            android:textSize="13sp" />
+    </RelativeLayout>
+
+
+</LinearLayout>

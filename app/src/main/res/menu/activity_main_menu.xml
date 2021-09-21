@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/menu_refresh"
+        android:title="@string/main_refresh"
+        app:showAsAction="never"/>
+
+    <item android:title="@string/main_help"
+        app:showAsAction="never">
+        <menu>
+            <item android:id="@+id/menu_about"
+                android:title="@string/main_about"/>
+            <item android:id="@+id/menu_disclaimer"
+                android:title="@string/main_disclaimer"/>
+        </menu>
+    </item>
+
+    <item android:id="@+id/menu_exit"
+        android:title="@string/main_exit"
+        app:showAsAction="never"/>
+
+</menu>
