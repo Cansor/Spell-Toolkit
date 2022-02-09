@@ -7,11 +7,12 @@
     <string name="no">不要</string>
     <string name="ok">好的</string>
     <string name="cancel">算了</string>
-    <string name="plugins_description">描述</string>
+    <string name="plugin_description">描述</string>
     <string name="not_find_plugins">未扫描到任何插件</string>
 
     <string name="main_refresh">刷新</string>
     <string name="main_help">帮助</string>
+    <string name="main_specification">说明</string>
     <string name="main_about">关于</string>
     <string name="main_disclaimer">免责声明</string>
     <string name="main_exit">退出</string>

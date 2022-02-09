@@ -1,102 +1,108 @@
 package com.jvgme.spelltoolkit.core;
 
-import com.jvgme.spelltoolkit.util.Tools;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * 插件管理器
+ * 该类设计为单例模式
  */
 public class PluginManager {
-    public static final String PLUGIN_PATH = "/SpellToolkit/Plugins";
-
     private static PluginManager pluginManager;
 
-    private final PluginLoader pluginLoader;
-    private Map<String, Plugin> pluginMap;
+    private PluginLoader pluginLoader;
+    private final Map<String, Plugin> pluginMap;
 
-    private PluginManager(PluginLoader pluginLoader) {
-        this.pluginLoader = pluginLoader;
-        initialize();
+    private PluginManager() {
+        pluginMap = new HashMap<>();
     }
 
-    // 初始化，加载插件
-    private void initialize() {
-        if (pluginLoader != null) {
-            try {
-                pluginMap = pluginLoader.load();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
+    /**
+     * 获取一个未指定插件加载器的插件管理器实例。
+     * 这是一个单例的对象，反回的总是同一个实例。
+     *
+     * @return PluginsManager
+     */
+    public static PluginManager instance() {
+        if (pluginManager == null) {
+            pluginManager = new PluginManager();
         }
-    }
-
-    public static PluginManager getPluginsManager(PluginLoader pluginLoader) {
-        if (pluginManager == null)
-            pluginManager = new PluginManager(pluginLoader);
         return pluginManager;
     }
 
     /**
-     * 获取所有插件
+     * 获取一个插件管理器实例，并指定一个插件加载器
+     * 这是一个单例的对象，反回的总是同一个实例。
+     *
+     * @param pluginLoader 插件加载器
+     * @return PluginsManager
+     */
+    public static PluginManager instance(PluginLoader pluginLoader) {
+        instance();
+        if (pluginManager.pluginLoader == null)
+            pluginManager.setPluginLoader(pluginLoader);
+
+        return pluginManager;
+    }
+
+    /**
+     * 指定一个插件加载器
+     *
+     * @param pluginLoader PluginLoader
+     */
+    public void setPluginLoader(PluginLoader pluginLoader) {
+        this.pluginLoader = pluginLoader;
+    }
+
+    /**
+     * 加载插件，并反回插件数量
+     *
+     * @return 加载的插件的数量
+     */
+    public int load() {
+        pluginMap.clear();
+        pluginMap.putAll(pluginLoader.load());
+        return pluginMap.size();
+    }
+
+    /**
+     * 获取所有插件，反回一个包含了所有插件对象 Plugin 的 List 集合
+     *
+     * @return 包含所有 Plugin 对象的 List 集合
      */
     public List<Plugin> getAllPlugins() {
-        List<Plugin> plugins = new ArrayList<>();
+        List<Plugin> pluginList = new ArrayList<>();
 
         Set<String> keys = pluginMap.keySet();
         for (String key : keys) {
             Plugin p = pluginMap.get(key);
             if (p != null)
-                plugins.add(p);
+                pluginList.add(p);
         }
 
-        return plugins;
+        return pluginList;
     }
 
     /**
-     * 反回插件的数量
+     * 根据插件 ID 获取插件的实例对象
+     *
+     * @param pluginID ID
+     * @return Plugin
+     */
+    public Plugin getPlugin(String pluginID) {
+        return pluginMap.get(pluginID);
+    }
+
+    /**
+     * 反回已加载的插件的数量
+     *
+     * @return 已加载的插件的数量
      */
     public int getPluginQuantity() {
         return pluginMap.size();
     }
 
-    /**
-     * 重新加载插件，并反回插件数量
-     */
-    public int reload() {
-        try {
-            pluginMap = pluginLoader.load();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return pluginMap.size();
-    }
-
-    /**
-     * 根据插件ID执行相应插件
-     *
-     * @param pluginsId 插件ID，根据该ID区分插件
-     * @param file 当前选择的File对象，给插件开发者处理
-     */
-    public void execute(String pluginsId, PluginLog pluginLog, File file) throws InstantiationException, IllegalAccessException {
-        Plugin plugin = pluginMap.get(pluginsId);
-        if (plugin == null) {
-            Tools.logInfo("没有该插件，ID: " + pluginsId);
-            return;
-        }
-
-        // 创建插件实例
-        Class<?> aClass = plugin.getMainClass();
-        PluginsServer pluginsServer = (PluginsServer) aClass.newInstance();
-
-        // 执行插件
-        pluginsServer.before(pluginLog);
-        pluginsServer.service(file);
-        pluginsServer.after();
-    }
 }

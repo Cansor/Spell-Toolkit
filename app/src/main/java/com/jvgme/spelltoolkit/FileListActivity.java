@@ -1,22 +1,28 @@
 package com.jvgme.spelltoolkit;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.jvgme.spelltoolkit.adapter.FileListAdapter;
-import com.jvgme.spelltoolkit.core.PluginManager;
-import com.jvgme.spelltoolkit.core.android.PluginLogImpl;
+import com.jvgme.spelltoolkit.core.PluginExecutor;
+import com.jvgme.spelltoolkit.core.android.PluginExecutorImpl;
+import com.jvgme.spelltoolkit.core.android.widget.DialogImpl;
+import com.jvgme.spelltoolkit.core.android.widget.LogWindowImpl;
+import com.jvgme.spelltoolkit.core.android.widget.MessageImpl;
+import com.jvgme.spelltoolkit.core.android.widget.WidgetManagerImpl;
+import com.jvgme.spelltoolkit.core.widget.Dialog;
+import com.jvgme.spelltoolkit.core.widget.LogWindow;
+import com.jvgme.spelltoolkit.core.widget.Message;
+import com.jvgme.spelltoolkit.core.widget.WidgetManager;
 import com.jvgme.spelltoolkit.util.FileUtils;
 import com.jvgme.spelltoolkit.util.Tools;
 
@@ -26,7 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class FileListActivity extends BaseActivity {
-    private PluginManager pluginManager;
     private FileListAdapter fileListAdapter;
     private String SDCardRootPath;
 
@@ -34,18 +39,14 @@ public class FileListActivity extends BaseActivity {
     private File currFile; // 记录当前路径
     private TextView filePath; // 用于在操作栏上显示路径
 
-    private PluginRunLogWindow logWindow;
-    private TextView logView;
+    private PluginExecutor pluginExecutor;
+    private LogWindow logWindow;
+
+    private final Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // 获取传递过来的参数
-        pluginsId = getIntent().getStringExtra("pluginsId");
-
-        pluginManager = Tools.getPluginManager(this);
-        SDCardRootPath = Tools.getExternalStorageDirectory(this, "");
 
         initializeView();
         updateFileList(SDCardRootPath);
@@ -85,53 +86,47 @@ public class FileListActivity extends BaseActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.menu_console) {
-            logWindow.showWindow();
+            logWindow.show();
             return true;
         }
         else
             return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * 初始化
+     */
     private void initializeView() {
-        // 创建日志窗口
-        logWindow = new PluginRunLogWindow(this);
-        logView = logWindow.getTextView();
+        pluginsId = getIntent().getStringExtra("pluginId"); // 获取传递过来的参数
+        SDCardRootPath = Tools.getExternalStorageDirectory(this, "");
+        logWindow = new LogWindowImpl(this); // 日志窗口
+
+        WidgetManager widgetManager = WidgetManagerImpl.instance();
+        // 注册控件
+        widgetManager.registerWidget(LogWindow.ID, logWindow);
+        widgetManager.registerWidget(Message.ID, new MessageImpl(this));
+        widgetManager.registerWidget(Dialog.ID, new DialogImpl(this));
+
+        pluginExecutor = new PluginExecutorImpl(Tools.getPluginManager(this), widgetManager);
 
         // 创建文件列表
         RecyclerView recyclerView = findViewById(R.id.rv_file_list);
         // 添加布局
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
+        // 添加适配器
         fileListAdapter = new FileListAdapter(this);
         recyclerView.setAdapter(fileListAdapter);
 
         // 点击事件
         fileListAdapter.setRecyclerItemClickListener((view, file, position) -> {
-            // 动画效果
-            ObjectAnimator objectAnimator = ObjectAnimator.ofArgb(view,
-                    "backgroundColor",Color.WHITE, Color.GRAY, Color.WHITE);
-            objectAnimator.setDuration(500);
-            objectAnimator.start();
-
             // 如果是文件夹，则显示该路径下的文件列表，如果是文件，则弹出对话框
             if (file.isDirectory()) {
-                updateFileList(file.getAbsolutePath());
+                handler.postDelayed(() -> updateFileList(file.getAbsolutePath()), 70);
             } else {
-                new AlertDialog.Builder(this)
-                        .setTitle(R.string.execute_plugins)
-                        .setPositiveButton(R.string.ok, (dialog, which) -> {
-                            try {
-                                // 显示日志窗口
-                                logWindow.showWindow();
-                                // 执行插件
-                                pluginManager.execute(pluginsId, new PluginLogImpl(logView) , file);
-                                updateFileList(currFile.getAbsolutePath());
-                            } catch (InstantiationException | IllegalAccessException e) {
-                                e.printStackTrace();
-                            }
-                        })
-                        .setNegativeButton(R.string.cancel, null)
-                        .show();
+                // 执行插件
+                pluginExecutor.execute(pluginsId, file);
+                // 更新文件列表
+                handler.postDelayed(() -> updateFileList(currFile.getAbsolutePath()), 100);
             }
         });
     }
@@ -178,5 +173,11 @@ public class FileListActivity extends BaseActivity {
         } else {
             finish();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
     }
 }

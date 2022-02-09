@@ -67,7 +67,7 @@ public class PluginListAdapter extends RecyclerView.Adapter<PluginListAdapter.Pl
         this.data.clear();
         this.data.addAll(data);
 
-        // 遍历逐个添加Item，这样有插入动画
+        // 遍历逐个添加 Item，这样有插入动画
         for (int i = 0; i < this.data.size(); i++) {
             notifyItemInserted(i);
         }

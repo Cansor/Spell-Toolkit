@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Icon;
 
-
 import com.jvgme.spelltoolkit.core.Plugin;
 import com.jvgme.spelltoolkit.core.PluginLoader;
 import com.jvgme.spelltoolkit.util.Tools;
@@ -15,11 +14,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
 import dalvik.system.DexClassLoader;
 
@@ -27,9 +26,11 @@ import dalvik.system.DexClassLoader;
  * 插件加载器
  */
 public class PluginLoaderImpl implements PluginLoader {
+    // 插件目录
+    public static final String PLUGIN_PATH =  "/SpellToolkit/Plugins";
+
     // 插件所在路径
     private final String path;
-
     private final Context context;
 
     public PluginLoaderImpl(String path, Context context) {
@@ -38,30 +39,36 @@ public class PluginLoaderImpl implements PluginLoader {
     }
 
     @Override
-    public Map<String, Plugin> load() throws IOException, ClassNotFoundException {
+    public Map<String, Plugin> load() {
         // 读取指定目录下所有jar文件
         List<File> jarFileList = getJarFile();
+        if (jarFileList == null) return null;
 
-        Map<String, Plugin> pluginsMap = new HashMap<>();
+        Map<String, Plugin> pluginMap = new HashMap<>();
 
-        // 读取每一个jar，载入插件
-        for (File jarFile : jarFileList) {
-            Plugin plugin = getPlugins(jarFile);
-            pluginsMap.put(plugin.getId(), plugin);
+        try {
+            // 读取每一个jar，载入插件
+            for (File jarFile : jarFileList) {
+                Plugin plugin = getPlugin(jarFile);
+                pluginMap.put(plugin.getId(), plugin);
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
         }
 
-        return pluginsMap;
+        return pluginMap;
     }
 
     /**
-     * 解析jar插件包，获取PluginsBean插件对象
+     * 解析jar插件包，获取 Plugin 插件对象
      *
-     * @param jFile jar插件包对象
+     * @param jFile jar插件包的 File 对象
+     * @return Plugin
      */
-    private Plugin getPlugins(File jFile) throws IOException, ClassNotFoundException {
+    private Plugin getPlugin(File jFile) throws IOException, ClassNotFoundException {
 
         JarFile jarFile = new JarFile(jFile);
-        // 获取清单文件
+        // 获取清单文件中定义的属性
         Attributes attributes = jarFile.getManifest().getMainAttributes();
 
         Plugin plugin = new Plugin();
@@ -72,9 +79,9 @@ public class PluginLoaderImpl implements PluginLoader {
         plugin.setAuthor(attributes.getValue("Spell-Author"));
         plugin.setVersion(attributes.getValue("Spell-Version"));
 
-        // 载入主类
-        String jar = context.getDir("Jar", 0).getAbsolutePath();
-        DexClassLoader dexClassLoader = new DexClassLoader(jFile.getAbsolutePath(), jar, null,
+        // 载入插件入口类
+        String jarDir = context.getDir("Jar", 0).getAbsolutePath();
+        DexClassLoader dexClassLoader = new DexClassLoader(jFile.getAbsolutePath(), jarDir, null,
                 getClass().getClassLoader());
         Class<?> main = dexClassLoader.loadClass(attributes.getValue("Spell-Class"));
         plugin.setMainClass(main);
@@ -93,7 +100,8 @@ public class PluginLoaderImpl implements PluginLoader {
         if (entryDescription != null) {
             InputStream in = jarFile.getInputStream(entryDescription);
             byte[] bytes = new byte[(int) entryDescription.getSize()];
-            in.read(bytes);
+            int read = in.read(bytes);
+            Tools.logInfo("Read plugin description, bytes:" + read);
             in.close();
             handlerPlaceholder(plugin, new String(bytes));
         }
@@ -103,7 +111,14 @@ public class PluginLoaderImpl implements PluginLoader {
         return plugin;
     }
 
-    // 处理占位符
+    /**
+     * 处理插件描述中的占位符
+     * 把 @version 替换成 插件版本
+     * 把 @author 替换成 插件作者
+     *
+     * @param plugin Plugin
+     * @param text 插件描述文本
+     */
     private void handlerPlaceholder(Plugin plugin, String text) {
         final String ver = "@version";
         final String aut = "@author";
@@ -126,17 +141,18 @@ public class PluginLoaderImpl implements PluginLoader {
 
         File file = new File(path);
         if (!file.exists() || !file.isDirectory()) {
-            Tools.logInfo("路径不存在！ in " + file.getAbsolutePath());
-            return jarList;
+            Tools.logInfo("getJarFile -> 路径不存在！" + file.getAbsolutePath());
+            return null;
         }
 
         // 获取路径下的所有文件
         File[] files = file.listFiles();
-        if (files == null) return jarList;
+        if (files == null) return null;
 
         // 把jar文件筛选出来放到List里
         for (File f : files) {
-            if (f.getName().endsWith(".jar"))
+            String lastName = f.getName().toLowerCase(Locale.ROOT);
+            if (lastName.endsWith(".stp"))
                 jarList.add(f);
         }
 

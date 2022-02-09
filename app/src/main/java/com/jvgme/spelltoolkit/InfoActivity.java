@@ -1,14 +1,10 @@
 package com.jvgme.spelltoolkit;
 
+import android.os.Bundle;
+import android.webkit.WebView;
+
 import androidx.appcompat.widget.Toolbar;
 
-import android.os.Bundle;
-import android.text.Html;
-import android.text.method.ScrollingMovementMethod;
-import android.webkit.WebView;
-import android.widget.TextView;
-
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**

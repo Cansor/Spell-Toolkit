@@ -6,13 +6,13 @@ import android.graphics.drawable.Icon;
  * 插件的实体类
  */
 public class Plugin {
-    private String id;
-    private String name;
-    private String author;
-    private String version;
-    private String description;
-    private Icon icon;
-    private Class<?> mainClass;
+    private String id; // 插件 ID，全局唯一
+    private String name; // 插件名称
+    private String author; // 插件作者
+    private String version; // 插件版本
+    private String description; // 插件描述
+    private Icon icon; // 插件图标
+    private Class<?> mainClass; // 插件启动主类
 
     public Icon getIcon() {
         return icon;

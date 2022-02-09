@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import com.jvgme.spelltoolkit.R;
 import com.jvgme.spelltoolkit.core.PluginManager;
 import com.jvgme.spelltoolkit.core.android.PluginLoaderImpl;
+import com.jvgme.spelltoolkit.core.widget.WidgetManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,17 +24,20 @@ import java.util.Calendar;
  * 全局工具类
  */
 public class Tools {
-    private static final String TAG = "Cansor";
+    private static final String TAG = "Cantor";
     // 日志开关，可以调试的时候设为true，正式发布时设为false
     private static final boolean isPrintLog = true;
 
     private static PluginManager pluginManager;
+    private static WidgetManager widgetManager;
 
     /**
-     * 获取SD卡根目录（如 /storage/emulated/0），如果是 Android 10 以上，
-     * 则返回应用目录（如 /storage/emulated/0/Android/data/包名/files）。
+     * 获取SD卡根目录所在路径（如 /storage/emulated/0），如果是 Android 10 以上，
+     * 则返回应用目录所在路径（如 /storage/emulated/0/Android/data/包名/files）。
      *
      * @param type 子目录，不允许为null，不指定子目录请传空字符串 ""
+     *
+     * @return SD卡根目录+子目录 的路径
      */
     public static String getExternalStorageDirectory(@NonNull Context context, @NonNull String type) {
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
@@ -49,24 +53,26 @@ public class Tools {
 
     /**
      * 获得一个插件管理器的实例
+     *
+     * @return PluginManager
      */
     public static PluginManager getPluginManager(@NonNull Context context) {
-        final String path = getExternalStorageDirectory(context, PluginManager.PLUGIN_PATH);
-        if (path == null) return null;
-
         if (pluginManager == null) {
+            final String path = getExternalStorageDirectory(context, PluginLoaderImpl.PLUGIN_PATH);
+            if (path == null) return null;
+
             // 插件所在的路径，如果不存在则创建
-            File pluginsPath = new File(path);
-            if (!pluginsPath.exists()) {
+            File pluginPath = new File(path);
+            if (!pluginPath.exists()) {
                 // 如果创建失败则弹出 Toast 提示
-                if (!pluginsPath.mkdirs()) {
-                    Toast.makeText(context, R.string.mkdirs_failure + pluginsPath.getPath(),
+                if (!pluginPath.mkdirs()) {
+                    Toast.makeText(context, R.string.mkdirs_failure + pluginPath.getPath(),
                             Toast.LENGTH_SHORT).show();
                 }
             }
 
-            pluginManager = PluginManager.getPluginsManager(
-                    new PluginLoaderImpl(pluginsPath.getAbsolutePath(), context));
+            pluginManager = PluginManager.instance(
+                    new PluginLoaderImpl(pluginPath.getAbsolutePath(), context));
         }
 
         return pluginManager;
@@ -74,6 +80,8 @@ public class Tools {
 
     /**
      * 根据文件名获取 assets 目录的文本文件的内容
+     *
+     * @return 文本内容
      */
     public static String getAssetsText(Context context, String fileName) {
         AssetManager assets = context.getAssets();
@@ -94,10 +102,15 @@ public class Tools {
 
     /**
      * 替换文本中的占位符
+     * 把 @version 替换为 app 版本
+     * 把 @year 替换为当前年份
+     *
+     * @return 替换后的文本
      */
-    public static String handlerPlaceholder(Context context, String text) {
+    private static String handlerPlaceholder(Context context, String text) {
         final String version = "@version";
         final String year = "@year";
+        final String pluginPath = "@pluginPath";
 
         if (text.contains(version)) {
             try {
@@ -111,6 +124,9 @@ public class Tools {
         }
         if (text.contains(year))
             text = text.replace(year, String.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
+        if (text.contains(pluginPath))
+            text = text.replace(pluginPath, getExternalStorageDirectory(context,
+                    PluginLoaderImpl.PLUGIN_PATH));
 
         return text;
     }

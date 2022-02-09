@@ -1,19 +1,9 @@
 package com.jvgme.spelltoolkit;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.PopupMenu;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.Manifest;
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
@@ -22,16 +12,27 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.jvgme.spelltoolkit.adapter.PluginListAdapter;
 import com.jvgme.spelltoolkit.core.Plugin;
 import com.jvgme.spelltoolkit.core.PluginManager;
 import com.jvgme.spelltoolkit.util.Tools;
 
+/**
+ * app 启动的主界面
+ */
 public class MainActivity extends BaseActivity {
     private AlertDialog.Builder exitAppAlertDialog;
     private RecyclerView rv_pluginList;
     private PluginListAdapter pluginListAdapter;
-    private TextView tv_notFindPlugins;
+    private TextView tv_notFindPlugin;
 
     private final Handler handler = new Handler();
     private long downTime;
@@ -67,42 +68,39 @@ public class MainActivity extends BaseActivity {
                 .setPositiveButton(R.string.yes, (dialog, which) -> finish())
                 .setNegativeButton(R.string.no, null);
 
-        tv_notFindPlugins = findViewById(R.id.tv_not_find_plugin);
+        // 未找到插件时的文字
+        tv_notFindPlugin = findViewById(R.id.tv_not_find_plugin);
 
         // 获取插件管理器
         PluginManager pluginManager = Tools.getPluginManager(this);
         if (pluginManager == null) return;
+        // 加载插件
+        pluginManager.load();
 
-        // 创建插件列表
-        rv_pluginList = findViewById(R.id.rv_plugins_list);
-        // 添加布局
+        // 创建插件列表视图
+        rv_pluginList = findViewById(R.id.rv_plugin_list);
+        // 添加布局，线性布局
         rv_pluginList.setLayoutManager(new LinearLayoutManager(this));
-
         // 添加适配器
-        pluginListAdapter = new PluginListAdapter(
-                pluginManager.getAllPlugins(),this);
+        pluginListAdapter = new PluginListAdapter(pluginManager.getAllPlugins(),this);
         rv_pluginList.setAdapter(pluginListAdapter);
 
         // TODO 感觉这里的动画还有点问题，虽然算是达到了效果，但最好还是优化一下
-        // 触摸事件
-        pluginListAdapter.setOnTouchListener((view, plugins, motionEvent) -> {
+        // 主界面插件列表的触摸事件
+        pluginListAdapter.setOnTouchListener((view, plugin, motionEvent) -> {
             switch (motionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    // 动画
-                    ObjectAnimator animator = ObjectAnimator.ofArgb(view, "backgroundColor",
-                            Color.WHITE, Color.rgb(214,214,214));
-                    animator.setDuration(500);
-                    animator.start();
-
+                    // 记录手指触摸的位置与时间
                     startX = (int) motionEvent.getX();
                     startY = (int) motionEvent.getY();
                     downTime = motionEvent.getDownTime();
-                    // 长按
-                    handler.postDelayed(() -> pluginItemOnLongClickEvent(view, plugins),
+                    // 如果触模时间达到 MAX_LONG_PRESS_TIME 则调用长按事件
+                    handler.postDelayed(() -> pluginItemOnLongClickEvent(view, plugin),
                             MAX_LONG_PRESS_TIME);
                     break;
 
                 case MotionEvent.ACTION_MOVE:
+                    // 记录手指触摸的位置
                     lastX = (int) motionEvent.getX();
                     lastY = (int) motionEvent.getY();
                     // 如果手指移动超出指定范围，则取消长按事件
@@ -113,30 +111,27 @@ public class MainActivity extends BaseActivity {
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    animator = ObjectAnimator.ofArgb(view, "backgroundColor",
-                            Color.rgb(214,214,214), Color.WHITE);
-                    animator.setDuration(500);
-                    animator.start();
-
+                    // 获取手指抬起的时间
                     upTime = motionEvent.getEventTime();
-                    // 点击
+                    // 如果手指触摸屏幕的时间小于 MAX_LONG_PRESS_TIME 则视为点击，取消长按并调用点击事件
                     if (upTime-downTime < MAX_LONG_PRESS_TIME) {
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(() -> {
-                            pluginItemOnClickEvent(plugins);
+                            pluginItemOnClickEvent(plugin);
                             view.performClick();
-                        }, 230);
+                        }, 200);
 
                     }
                     break;
             }
-            return true;
+            // 要产生xml定义的点击动画效果，这里必需为 false, 这样点击动作将会传递下去
+            return false;
         });
 
-        // 如果没安装插件则提示
+        // 如果加载不到插件则出现提示
         if (pluginManager.getPluginQuantity() < 1) {
             rv_pluginList.setVisibility(View.GONE);
-            tv_notFindPlugins.setVisibility(View.VISIBLE);
+            tv_notFindPlugin.setVisibility(View.VISIBLE);
         }
     }
 
@@ -147,12 +142,12 @@ public class MainActivity extends BaseActivity {
         // 创建弹出菜单
         PopupMenu popupMenu = new PopupMenu(this, view);
         // 填充菜单
-//        popupMenu.getMenuInflater().inflate(R.menu.plugins_item_menu, popupMenu.getMenu());
-        popupMenu.inflate(R.menu.plugins_item_menu);
+//        popupMenu.getMenuInflater().inflate(R.menu.plugin_item_menu, popupMenu.getMenu());
+        popupMenu.inflate(R.menu.plugin_item_menu);
         // 菜单项的点击事件
         popupMenu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.menu_plugins_description) {
-                gotoInfoActivity(getResources().getString(R.string.plugins_description), plugin.getDescription());
+            if (item.getItemId() == R.id.menu_plugin_description) {
+                gotoInfoActivity(getResources().getString(R.string.plugin_description), plugin.getDescription());
             }
             return true;
         });
@@ -167,7 +162,7 @@ public class MainActivity extends BaseActivity {
         // 创建意图，转到 FileListActivity
         Intent intent = new Intent(this, FileListActivity.class);
         // 把插件ID传过去
-        intent.putExtra("pluginsId", plugin.getId());
+        intent.putExtra("pluginId", plugin.getId());
         // 跳转到Activity
         startActivity(intent);
     }
@@ -191,20 +186,24 @@ public class MainActivity extends BaseActivity {
         if (item.getItemId() == R.id.menu_refresh) {
             PluginManager pluginManager = Tools.getPluginManager(this);
             if (pluginManager != null) {
-                int reload = pluginManager.reload();
+                int reload = pluginManager.load();
                 pluginListAdapter.updateData(pluginManager.getAllPlugins());
                 if (reload > 0) {
-                    tv_notFindPlugins.setVisibility(View.GONE);
+                    tv_notFindPlugin.setVisibility(View.GONE);
                     rv_pluginList.setVisibility(View.VISIBLE);
                 } else {
                     rv_pluginList.setVisibility(View.GONE);
-                    tv_notFindPlugins.setVisibility(View.VISIBLE);
+                    tv_notFindPlugin.setVisibility(View.VISIBLE);
                 }
             }
         }
         else if (item.getItemId() == R.id.menu_about) {
             gotoInfoActivity(getResources().getString(R.string.main_about),
                     Tools.getAssetsText(this, "about.html"));
+        }
+        else if (item.getItemId() == R.id.menu_specification) {
+            gotoInfoActivity(getResources().getString(R.string.main_specification),
+                    Tools.getAssetsText(this, "specification.html"));
         }
         else if (item.getItemId() == R.id.menu_disclaimer){
             gotoInfoActivity(getResources().getString(R.string.main_disclaimer),

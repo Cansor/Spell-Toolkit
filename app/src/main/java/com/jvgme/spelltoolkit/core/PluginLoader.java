@@ -1,6 +1,5 @@
 package com.jvgme.spelltoolkit.core;
 
-import java.io.IOException;
 import java.util.Map;
 
 public interface PluginLoader {
@@ -10,5 +9,5 @@ public interface PluginLoader {
      *
      * @return 插件对象的Map集合
      */
-    Map<String, Plugin> load() throws IOException, ClassNotFoundException;
+    Map<String, Plugin> load();
 }

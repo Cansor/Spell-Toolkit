@@ -120,7 +120,8 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLView
     }
 
     /**
-     * 点击事件监听接口
+     * 点击事件的回调接口。
+     * 之所以使用回调的方式，是因为直接 set 监听器无法把用户选择的文件传递过去交给插件处理。
      */
     public interface FileListItemClickListener {
         void onClick(View view, File file, int position);
