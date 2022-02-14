@@ -1,45 +1,155 @@
 package com.jvgme.spelltoolkit.core.android.widget;
 
-import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+
+import androidx.appcompat.app.AlertDialog;
 
 import com.jvgme.spelltoolkit.core.widget.Dialog;
 
-public class DialogImpl implements Dialog {
-    private final Context context;
+import java.io.InputStream;
 
-    public DialogImpl(Context context) {
-        this.context = context;
+/**
+ * 对话框的安卓实现
+ */
+public class DialogImpl implements Dialog {
+    protected final AlertDialog.Builder alertDialog;
+
+    protected DialogImpl(Context context) {
+        alertDialog = new AlertDialog.Builder(context);
     }
 
     /**
-     * 弹出一个确认/取消的对话框
+     * 返回该类的实例
+     *
+     * @param context Context
+     * @return 该类的实例
+     */
+    public static Dialog create(Context context) {
+        return new DialogImpl(context);
+    }
+
+    /**
+     * 设置对话框的标题
      *
      * @param title 标题
-     * @param msg   消息文本
      */
     @Override
-    public void confirm(String title, String msg, String btn1, String btn2,
-                        OnClickListener btn1Listener, OnClickListener btn2Listener) {
-        new AlertDialog.Builder(context)
-                .setTitle(title)
-                .setMessage(msg)
-                .setPositiveButton(btn1, (dialog, which) -> btn1Listener.onClick(which))
-                .setNegativeButton(btn2, ((dialog, which) -> btn2Listener.onClick(which)));
+    public Dialog setTitle(String title) {
+        alertDialog.setTitle(title);
+        return this;
     }
 
     /**
-     * 弹出一个可选择的列表项
+     * 设置消息文本
+     * 注意，当设置了消息文本后，选项将不可用。
      *
-     * @param title           标题
-     * @param items           列表项目录
-     * @param onClickListener 监听器
+     * @param message 消息文本
      */
     @Override
-    public void select(String title, String[] items, OnClickListener onClickListener) {
-        new AlertDialog.Builder(context)
-                .setTitle(title)
-                .setItems(items, (dialog, which) -> onClickListener.onClick(which))
-                .show();
+    public Dialog setMessage(String message) {
+        alertDialog.setMessage(message);
+        return this;
     }
+
+    /**
+     * 设置确认按钮
+     *
+     * @param buttonText      按钮显示文本
+     * @param onClickListener 点击监听器
+     */
+    @Override
+    public Dialog setPositiveButton(String buttonText, OnClickListener onClickListener) {
+        alertDialog.setPositiveButton(buttonText, (dialog, which) -> {
+            if (onClickListener != null)
+                onClickListener.onClick(this, which);
+        });
+        return this;
+    }
+
+    /**
+     * 设置否定按钮
+     *
+     * @param buttonText      按钮显示文本
+     * @param onClickListener 点击监听器
+     */
+    @Override
+    public Dialog setNegativeButton(String buttonText, OnClickListener onClickListener) {
+        alertDialog.setNegativeButton(buttonText, (dialog, which) -> {
+            if (onClickListener != null)
+                onClickListener.onClick(this, which);
+        });
+        return this;
+    }
+
+    /**
+     * 设置选项列表
+     *
+     * @param items           选项列表数组
+     * @param onClickListener 点击监听器，在选中时调用
+     */
+    @Override
+    public Dialog setItem(String[] items, OnClickListener onClickListener) {
+        alertDialog.setItems(items, (dialog, which) -> {
+            if (onClickListener != null)
+                onClickListener.onClick(this, which);
+        });
+        return this;
+    }
+
+    /**
+     * 设置单选项
+     *
+     * @param items           单选列表项
+     * @param i               默认选中项的下标，-1 表示无选中项
+     * @param onClickListener 监听器，在选中时调用
+     */
+    @Override
+    public Dialog setSingleChoiceItems(String[] items, int i, OnClickListener onClickListener) {
+        alertDialog.setSingleChoiceItems(items, i, (dialog, which) -> {
+            if (onClickListener != null)
+                onClickListener.onClick(this, which);
+        });
+        return this;
+    }
+
+    /**
+     * 设置复选项
+     *
+     * @param items        复选列表项
+     * @param checkedItems 复选列表项的状态，true 表示选中，false 表示未选中
+     * @param listener     监听器，在选中时调用
+     */
+    @Override
+    public Dialog setMultiChoiceItems(String[] items, boolean[] checkedItems, OnMultiChoiceClickListener listener) {
+        alertDialog.setMultiChoiceItems(items, checkedItems, (dialog, which, isChecked) -> {
+            if (listener != null)
+                listener.onClick(which, isChecked);
+        });
+        return this;
+    }
+
+    /**
+     * 设置对话框的 Icon
+     * 注意，只有在设置了标题的情况下才会显示
+     *
+     * @param is InputStream
+     * @param srcName 资源名称
+     */
+    @Override
+    public Dialog setIcon(InputStream is, String srcName) {
+        Drawable drawable = BitmapDrawable.createFromStream(is, srcName);
+        alertDialog.setIcon(drawable);
+        return this;
+    }
+
+    /**
+     * 显示对话框
+     */
+    @Override
+    public void show() {
+        alertDialog.show();
+    }
+
 }

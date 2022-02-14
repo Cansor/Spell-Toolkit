@@ -7,6 +7,7 @@ package com.jvgme.spelltoolkit.core.widget;
 public interface LogWindow extends Widget {
     String ID = "LogWindow";
 
+    // 一些常用颜色
     String COLOR_RED = "#FF0000";
     String COLOR_BLUE = "#0000FF";
     String COLOR_GREEN = "#00FF00";

@@ -11,6 +11,8 @@ import com.jvgme.spelltoolkit.util.Tools;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +62,7 @@ public class PluginLoaderImpl implements PluginLoader {
     }
 
     /**
-     * 解析jar插件包，获取 Plugin 插件对象
+     * 解析插件包，获取 Plugin 插件对象
      *
      * @param jFile jar插件包的 File 对象
      * @return Plugin
@@ -80,8 +82,8 @@ public class PluginLoaderImpl implements PluginLoader {
         plugin.setVersion(attributes.getValue("Spell-Version"));
 
         // 载入插件入口类
-        String jarDir = context.getDir("Jar", 0).getAbsolutePath();
-        DexClassLoader dexClassLoader = new DexClassLoader(jFile.getAbsolutePath(), jarDir, null,
+        String stpDir = context.getDir("stp", 0).getAbsolutePath();
+        DexClassLoader dexClassLoader = new DexClassLoader(jFile.getAbsolutePath(), stpDir, null,
                 getClass().getClassLoader());
         Class<?> main = dexClassLoader.loadClass(attributes.getValue("Spell-Class"));
         plugin.setMainClass(main);
@@ -132,9 +134,9 @@ public class PluginLoaderImpl implements PluginLoader {
     }
 
     /**
-     * 读取指定目录下所有jar文件
+     * 读取指定目录下所有stp文件
      *
-     * @return 指定目录下的所有jar文件
+     * @return 指定目录下的所有stp文件
      */
     private List<File> getJarFile() {
         List<File> jarList = new ArrayList<>();
@@ -149,7 +151,7 @@ public class PluginLoaderImpl implements PluginLoader {
         File[] files = file.listFiles();
         if (files == null) return null;
 
-        // 把jar文件筛选出来放到List里
+        // 把stp文件筛选出来放到List里
         for (File f : files) {
             String lastName = f.getName().toLowerCase(Locale.ROOT);
             if (lastName.endsWith(".stp"))

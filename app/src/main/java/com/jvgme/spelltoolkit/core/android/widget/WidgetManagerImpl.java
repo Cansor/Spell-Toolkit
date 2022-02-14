@@ -30,6 +30,7 @@ public class WidgetManagerImpl implements WidgetManager {
         return widgetManager;
     }
 
+
     /**
      * 注册一个控件，ID 必需是唯一的，否则将被覆盖
      *

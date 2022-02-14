@@ -85,7 +85,6 @@ public class MainActivity extends BaseActivity {
         pluginListAdapter = new PluginListAdapter(pluginManager.getAllPlugins(),this);
         rv_pluginList.setAdapter(pluginListAdapter);
 
-        // TODO 感觉这里的动画还有点问题，虽然算是达到了效果，但最好还是优化一下
         // 主界面插件列表的触摸事件
         pluginListAdapter.setOnTouchListener((view, plugin, motionEvent) -> {
             switch (motionEvent.getAction()) {
@@ -124,7 +123,8 @@ public class MainActivity extends BaseActivity {
                     }
                     break;
             }
-            // 要产生xml定义的点击动画效果，这里必需为 false, 这样点击动作将会传递下去
+
+            // 要产生xml定义的点击动画效果，这里必需为 false, 这样事件将会传递下去
             return false;
         });
 
@@ -183,7 +183,8 @@ public class MainActivity extends BaseActivity {
      */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.menu_refresh) {
+        int itemId = item.getItemId();
+        if (itemId == R.id.file_list_menu_refresh) {
             PluginManager pluginManager = Tools.getPluginManager(this);
             if (pluginManager != null) {
                 int reload = pluginManager.load();
@@ -197,19 +198,19 @@ public class MainActivity extends BaseActivity {
                 }
             }
         }
-        else if (item.getItemId() == R.id.menu_about) {
+        else if (itemId == R.id.menu_about) {
             gotoInfoActivity(getResources().getString(R.string.main_about),
                     Tools.getAssetsText(this, "about.html"));
         }
-        else if (item.getItemId() == R.id.menu_specification) {
+        else if (itemId == R.id.menu_specification) {
             gotoInfoActivity(getResources().getString(R.string.main_specification),
                     Tools.getAssetsText(this, "specification.html"));
         }
-        else if (item.getItemId() == R.id.menu_disclaimer){
+        else if (itemId == R.id.menu_disclaimer){
             gotoInfoActivity(getResources().getString(R.string.main_disclaimer),
                     Tools.getAssetsText(this, "disclaimer.html"));
         }
-        else if (item.getItemId() == R.id.menu_exit) {
+        else if (itemId == R.id.menu_exit) {
             finish();
         }
         else {

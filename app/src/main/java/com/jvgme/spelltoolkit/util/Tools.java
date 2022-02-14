@@ -13,7 +13,6 @@ import androidx.annotation.NonNull;
 import com.jvgme.spelltoolkit.R;
 import com.jvgme.spelltoolkit.core.PluginManager;
 import com.jvgme.spelltoolkit.core.android.PluginLoaderImpl;
-import com.jvgme.spelltoolkit.core.widget.WidgetManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +28,6 @@ public class Tools {
     private static final boolean isPrintLog = true;
 
     private static PluginManager pluginManager;
-    private static WidgetManager widgetManager;
 
     /**
      * 获取SD卡根目录所在路径（如 /storage/emulated/0），如果是 Android 10 以上，

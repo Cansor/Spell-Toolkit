@@ -1,7 +1,5 @@
 package com.jvgme.spelltoolkit.core.android;
 
-import android.app.AlertDialog;
-
 import com.jvgme.spelltoolkit.core.Plugin;
 import com.jvgme.spelltoolkit.core.PluginExecutor;
 import com.jvgme.spelltoolkit.core.PluginManager;
@@ -34,7 +32,6 @@ public class PluginExecutorImpl implements PluginExecutor {
     @Override
     public void execute(String pluginId, File file) {
         LogWindow logWindow = (LogWindow) widgetManager.getWidget(LogWindowImpl.ID);
-
         try {
             // 执行插件
             Plugin plugin = pluginManager.getPlugin(pluginId);

@@ -35,16 +35,14 @@ public class PluginManager {
 
     /**
      * 获取一个插件管理器实例，并指定一个插件加载器
-     * 这是一个单例的对象，反回的总是同一个实例。
+     * 这是一个单例的对象，反回的总是同一个实例（但是插件加载器会被重新指定，即等价于
+     * 调用 instance() 后再调用 setPluginLoader()）。
      *
      * @param pluginLoader 插件加载器
      * @return PluginsManager
      */
     public static PluginManager instance(PluginLoader pluginLoader) {
-        instance();
-        if (pluginManager.pluginLoader == null)
-            pluginManager.setPluginLoader(pluginLoader);
-
+        instance().setPluginLoader(pluginLoader);
         return pluginManager;
     }
 

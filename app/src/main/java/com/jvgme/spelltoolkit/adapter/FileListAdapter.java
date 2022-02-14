@@ -3,6 +3,7 @@ package com.jvgme.spelltoolkit.adapter;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -13,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.jvgme.spelltoolkit.R;
 import com.jvgme.spelltoolkit.util.FileUtils;
-import com.jvgme.spelltoolkit.util.Tools;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,15 +22,20 @@ import java.util.List;
 public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLViewHolder> {
     private final List<File> data;
     private final Context context;
-    private FileListItemClickListener fileListItemClickListener;
+    private OnTouchListener onTouchListener;
+    private OnUpdatedListener onUpdatedListener;
 
     public FileListAdapter(Context context) {
         this.context = context;
         this.data = new ArrayList<>();
     }
 
-    public void setRecyclerItemClickListener(FileListItemClickListener fileListItemClickListener) {
-        this.fileListItemClickListener = fileListItemClickListener;
+    public void setOnTouchListener(OnTouchListener onTouchListener) {
+        this.onTouchListener = onTouchListener;
+    }
+
+    public void setOnUpdatedListener(OnUpdatedListener onUpdatedListener) {
+        this.onUpdatedListener = onUpdatedListener;
     }
 
     @NonNull
@@ -93,6 +98,8 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLView
         for (int i = 0; i < this.data.size(); i++) {
             notifyItemInserted(i);
         }
+        if (onUpdatedListener != null)
+            onUpdatedListener.onUpdated();
     }
 
 
@@ -109,21 +116,32 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLView
             lastTime = itemView.findViewById(R.id.file_last_time);
             fileSize = itemView.findViewById(R.id.file_size);
 
-            // 添加点击事件监听器
-            itemView.setOnClickListener(v -> {
-                // 回调
-                if (fileListItemClickListener != null) {
-                    fileListItemClickListener.onClick(v, data.get(getBindingAdapterPosition()), getBindingAdapterPosition());
+            // 添加触摸监听事件
+            itemView.setOnTouchListener((view, motionEvent) -> {
+                // 调用触摸事件回调接口的实例，把参数传过去
+                if (onTouchListener != null) {
+                    int position = getBindingAdapterPosition();
+                    return onTouchListener.onTouch(view, data.get(position), motionEvent);
                 }
+
+                view.performClick();
+                return false;
             });
         }
     }
 
     /**
-     * 点击事件的回调接口。
+     * 触摸事件的回调接口。
      * 之所以使用回调的方式，是因为直接 set 监听器无法把用户选择的文件传递过去交给插件处理。
      */
-    public interface FileListItemClickListener {
-        void onClick(View view, File file, int position);
+    public interface OnTouchListener {
+        boolean onTouch(View view, File file, MotionEvent motionEvent);
+    }
+
+    /**
+     * 更新数据后回调
+     */
+    public interface OnUpdatedListener {
+        void onUpdated();
     }
 }

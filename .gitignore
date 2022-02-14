@@ -9,6 +9,7 @@
 .cxx
 
 /app/release
+/app/build
 /build.gradle
 /gradle.properties
 /gradlew

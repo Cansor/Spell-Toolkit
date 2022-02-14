@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jvgme.spelltoolkit.R;
 import com.jvgme.spelltoolkit.core.Plugin;
 
-import java.io.File;
 import java.util.List;
 
 public class PluginListAdapter extends RecyclerView.Adapter<PluginListAdapter.PluginViewHolder> {
@@ -79,7 +78,7 @@ public class PluginListAdapter extends RecyclerView.Adapter<PluginListAdapter.Pl
         private final TextView author;
         private final TextView version;
 
-        @SuppressLint("ClickableViewAccessibility")
+//        @SuppressLint("ClickableViewAccessibility")
         public PluginViewHolder(@NonNull View itemView) {
             super(itemView);
 
@@ -88,17 +87,20 @@ public class PluginListAdapter extends RecyclerView.Adapter<PluginListAdapter.Pl
             this.author = itemView.findViewById(R.id.tv_plugins_author);
             this.version = itemView.findViewById(R.id.tv_plugins_version);
 
+            // 添加监听事件
             itemView.setOnTouchListener((view, motionEvent) -> {
+                // 调用触摸事件回调接口的实例，把参数传过去
                 if (onTouchListener != null) {
-                    return onTouchListener.onTouch(view, data.get(getBindingAdapterPosition()),
-                            motionEvent);
+                    int position = getBindingAdapterPosition();
+                    return onTouchListener.onTouch(view, data.get(position), motionEvent);
                 }
+                view.performClick();
                 return false;
             });
         }
     }
 
-    // 触摸监听器接口
+    // 触摸事件回调接口
     public interface OnTouchListener {
         boolean onTouch(View view, Plugin plugin, MotionEvent motionEvent);
     }

@@ -12,7 +12,7 @@ public interface WidgetManager {
      * 注册一个控件，ID 必需是唯一的
      *
      * @param id 唯一 ID
-     * @param widget 控件实例
+     * @param widget 控件类
      */
     void registerWidget(String id, Widget widget);
 
