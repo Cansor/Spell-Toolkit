@@ -41,6 +41,19 @@ public interface EditTextDialog extends Widget, Dialog{
     void setCursor(int i);
 
     /**
+     * 设置光标选择的范围
+     *
+     * @param start 开始的索引
+     * @param stop 结束的索引
+     */
+    void setCursor(int start, int stop);
+
+    /**
+     * 使编辑框获得焦点
+     */
+    void requestFocus();
+
+    /**
      * 返回编辑框的文本
      *
      * @return String

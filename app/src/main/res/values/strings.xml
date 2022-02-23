@@ -2,7 +2,6 @@
     <string name="app_name">Spell Toolkit</string>
     <string name="mkdirs_failure">插件目录创建失败！</string>
     <string name="exit_app">真的要退出吗？</string>
-    <string name="execute_plugins">开始执行？</string>
     <string name="yes">是的</string>
     <string name="no">不要</string>
     <string name="ok">好的</string>
@@ -19,5 +18,16 @@
 
     <string name="file_list_console">日志</string>
     <string name="file_list_refresh">刷新</string>
+
+    <string name="file_menu_execute_plugin">执行插件</string>
+    <string name="file_menu_title">选择</string>
+    <string name="file_menu_rename">重命名</string>
+    <string name="file_menu_delete">删除</string>
+    <string name="file_rename_succeed">重命名文件成功</string>
+    <string name="file_rename_failure">重命名文件失败</string>
+    <string name="file_delete_ask">确定删除 %fileName% 吗</string>
+    <string name="file_delete_succeed">删除文件成功</string>
+    <string name="file_delete_failure">删除文件失败</string>
+
 
 </resources>

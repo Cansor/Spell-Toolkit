@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 
@@ -23,19 +22,24 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jvgme.spelltoolkit.adapter.PluginListAdapter;
 import com.jvgme.spelltoolkit.core.Plugin;
 import com.jvgme.spelltoolkit.core.PluginManager;
+import com.jvgme.spelltoolkit.listener.OnRecyclerViewItemTouchListener;
 import com.jvgme.spelltoolkit.util.Tools;
+
+import java.util.List;
 
 /**
  * app 启动的主界面
  */
 public class MainActivity extends BaseActivity {
     private AlertDialog.Builder exitAppAlertDialog;
-    private RecyclerView rv_pluginList;
+    private RecyclerView recyclerView;
     private PluginListAdapter pluginListAdapter;
     private TextView tv_notFindPlugin;
 
     private final Handler handler = new Handler();
-    private long downTime;
+
+    private List<Plugin> pluginList;
+    /*private long downTime;
     private long upTime;
 
     // 最大长按时间
@@ -43,7 +47,7 @@ public class MainActivity extends BaseActivity {
     // 最大点击范围，超出则算移动
     private final int MAX_CLICK_RANGE = 80;
     // 手指触摸的坐标
-    private int startX, startY, lastX, lastY;
+    private int startX, startY, lastX, lastY;*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,61 +80,31 @@ public class MainActivity extends BaseActivity {
         if (pluginManager == null) return;
         // 加载插件
         pluginManager.load();
+        pluginList = pluginManager.getAllPlugins();
 
         // 创建插件列表视图
-        rv_pluginList = findViewById(R.id.rv_plugin_list);
+        recyclerView = findViewById(R.id.rv_plugin_list);
         // 添加布局，线性布局
-        rv_pluginList.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         // 添加适配器
-        pluginListAdapter = new PluginListAdapter(pluginManager.getAllPlugins(),this);
-        rv_pluginList.setAdapter(pluginListAdapter);
+        pluginListAdapter = new PluginListAdapter(pluginList,this);
+        recyclerView.setAdapter(pluginListAdapter);
 
-        // 主界面插件列表的触摸事件
-        pluginListAdapter.setOnTouchListener((view, plugin, motionEvent) -> {
-            switch (motionEvent.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    // 记录手指触摸的位置与时间
-                    startX = (int) motionEvent.getX();
-                    startY = (int) motionEvent.getY();
-                    downTime = motionEvent.getDownTime();
-                    // 如果触模时间达到 MAX_LONG_PRESS_TIME 则调用长按事件
-                    handler.postDelayed(() -> pluginItemOnLongClickEvent(view, plugin),
-                            MAX_LONG_PRESS_TIME);
-                    break;
-
-                case MotionEvent.ACTION_MOVE:
-                    // 记录手指触摸的位置
-                    lastX = (int) motionEvent.getX();
-                    lastY = (int) motionEvent.getY();
-                    // 如果手指移动超出指定范围，则取消长按事件
-                    if (Math.abs(lastX-startX) > MAX_CLICK_RANGE
-                            || Math.abs(lastY-startY) > MAX_CLICK_RANGE) {
-                        handler.removeCallbacksAndMessages(null);
-                    }
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    // 获取手指抬起的时间
-                    upTime = motionEvent.getEventTime();
-                    // 如果手指触摸屏幕的时间小于 MAX_LONG_PRESS_TIME 则视为点击，取消长按并调用点击事件
-                    if (upTime-downTime < MAX_LONG_PRESS_TIME) {
-                        handler.removeCallbacksAndMessages(null);
-                        handler.postDelayed(() -> {
-                            pluginItemOnClickEvent(plugin);
-                            view.performClick();
-                        }, 200);
-
-                    }
-                    break;
+        recyclerView.addOnItemTouchListener(new OnRecyclerViewItemTouchListener(recyclerView) {
+            @Override
+            public void onItemClick(RecyclerView.ViewHolder vh, int position) {
+                handler.postDelayed(() -> pluginItemOnClickEvent(pluginList.get(position)), 150);
             }
 
-            // 要产生xml定义的点击动画效果，这里必需为 false, 这样事件将会传递下去
-            return false;
+            @Override
+            public void onItemLongClick(RecyclerView.ViewHolder vh, int position) {
+                pluginItemOnLongClickEvent(vh.itemView, pluginList.get(position));
+            }
         });
 
         // 如果加载不到插件则出现提示
         if (pluginManager.getPluginQuantity() < 1) {
-            rv_pluginList.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.GONE);
             tv_notFindPlugin.setVisibility(View.VISIBLE);
         }
     }
@@ -191,9 +165,9 @@ public class MainActivity extends BaseActivity {
                 pluginListAdapter.updateData(pluginManager.getAllPlugins());
                 if (reload > 0) {
                     tv_notFindPlugin.setVisibility(View.GONE);
-                    rv_pluginList.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.VISIBLE);
                 } else {
-                    rv_pluginList.setVisibility(View.GONE);
+                    recyclerView.setVisibility(View.GONE);
                     tv_notFindPlugin.setVisibility(View.VISIBLE);
                 }
             }

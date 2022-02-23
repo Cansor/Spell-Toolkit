@@ -3,7 +3,6 @@ package com.jvgme.spelltoolkit.adapter;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -22,7 +21,6 @@ import java.util.List;
 public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLViewHolder> {
     private final List<File> data;
     private final Context context;
-    private OnTouchListener onTouchListener;
     private OnUpdatedListener onUpdatedListener;
 
     public FileListAdapter(Context context) {
@@ -30,9 +28,6 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLView
         this.data = new ArrayList<>();
     }
 
-    public void setOnTouchListener(OnTouchListener onTouchListener) {
-        this.onTouchListener = onTouchListener;
-    }
 
     public void setOnUpdatedListener(OnUpdatedListener onUpdatedListener) {
         this.onUpdatedListener = onUpdatedListener;
@@ -102,8 +97,7 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLView
             onUpdatedListener.onUpdated();
     }
 
-
-    class FLViewHolder extends RecyclerView.ViewHolder {
+    protected static class FLViewHolder extends RecyclerView.ViewHolder {
         private final ImageView fileIcon;
         private final TextView fileName;
         private final TextView lastTime;
@@ -115,27 +109,7 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FLView
             fileName = itemView.findViewById(R.id.file_name);
             lastTime = itemView.findViewById(R.id.file_last_time);
             fileSize = itemView.findViewById(R.id.file_size);
-
-            // 添加触摸监听事件
-            itemView.setOnTouchListener((view, motionEvent) -> {
-                // 调用触摸事件回调接口的实例，把参数传过去
-                if (onTouchListener != null) {
-                    int position = getBindingAdapterPosition();
-                    return onTouchListener.onTouch(view, data.get(position), motionEvent);
-                }
-
-                view.performClick();
-                return false;
-            });
         }
-    }
-
-    /**
-     * 触摸事件的回调接口。
-     * 之所以使用回调的方式，是因为直接 set 监听器无法把用户选择的文件传递过去交给插件处理。
-     */
-    public interface OnTouchListener {
-        boolean onTouch(View view, File file, MotionEvent motionEvent);
     }
 
     /**

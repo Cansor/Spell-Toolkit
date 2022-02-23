@@ -17,7 +17,6 @@ import com.jvgme.spelltoolkit.core.android.PluginLoaderImpl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Calendar;
 
 /**
  * 全局工具类
@@ -101,13 +100,12 @@ public class Tools {
     /**
      * 替换文本中的占位符
      * 把 @version 替换为 app 版本
-     * 把 @year 替换为当前年份
      *
      * @return 替换后的文本
      */
     private static String handlerPlaceholder(Context context, String text) {
         final String version = "@version";
-        final String year = "@year";
+//        final String year = "@year";
         final String pluginPath = "@pluginPath";
 
         if (text.contains(version)) {
@@ -120,8 +118,8 @@ public class Tools {
                 e.printStackTrace();
             }
         }
-        if (text.contains(year))
-            text = text.replace(year, String.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
+//        if (text.contains(year))
+//            text = text.replace(year, String.valueOf(Calendar.getInstance().get(Calendar.YEAR)));
         if (text.contains(pluginPath))
             text = text.replace(pluginPath, getExternalStorageDirectory(context,
                     PluginLoaderImpl.PLUGIN_PATH));

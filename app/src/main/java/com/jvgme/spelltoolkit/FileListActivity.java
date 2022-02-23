@@ -1,14 +1,18 @@
 package com.jvgme.spelltoolkit;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +30,7 @@ import com.jvgme.spelltoolkit.core.widget.EditTextDialog;
 import com.jvgme.spelltoolkit.core.widget.LogWindow;
 import com.jvgme.spelltoolkit.core.widget.Message;
 import com.jvgme.spelltoolkit.core.widget.WidgetManager;
+import com.jvgme.spelltoolkit.listener.OnRecyclerViewItemTouchListener;
 import com.jvgme.spelltoolkit.util.FileUtils;
 import com.jvgme.spelltoolkit.util.Tools;
 
@@ -41,25 +46,25 @@ public class FileListActivity extends BaseActivity {
     private String SDCardRootPath;
 
     private String pluginsId; // 插件ID
-    private File currFile; // 记录当前路径
+    private File currPathFile; // 记录当前路径
     private TextView filePath; // 用于在操作栏上显示路径
+    private final List<File> fileList = new ArrayList<>();
 
     private PluginExecutor pluginExecutor;
     private LogWindow logWindow;
 
     private final Handler handler = new Handler();
-    private long downTime;
-    private long upTime;
-    // 最大长按时间
-    private final int MAX_LONG_PRESS_TIME = 500;
-    // 最大点击范围，超出则算移动
-    private final int MAX_CLICK_RANGE = 80;
-    // 手指触摸的坐标
-    private int startX, startY, lastX, lastY;
+
     // 每层目录 item 滚动的坐标
     private final Map<String, Integer> itemPositionMap = new HashMap<>();
     // 记录文件夹的名称
     private String lastPath;
+
+    private String[] menu;
+    private File currFile; // 当前选中的文件
+    private AlertDialog.Builder fileMenuDialog; // 文件操作对话框
+    private EditTextDialog fileRenameDialog; // 文件重命名对话框
+    private AlertDialog.Builder fileDeleteDialog; // 文件删除对话框
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,7 +113,7 @@ public class FileListActivity extends BaseActivity {
             return true;
         }
         else if (itemId == R.id.file_list_menu_refresh) {
-            updateFileList(currFile.getAbsolutePath());
+            updateFileList(currPathFile.getAbsolutePath());
             return true;
         }
         else
@@ -121,6 +126,60 @@ public class FileListActivity extends BaseActivity {
     private void initializeView() {
         pluginsId = getIntent().getStringExtra("pluginId"); // 获取传递过来的参数
         SDCardRootPath = Tools.getExternalStorageDirectory(this, "");
+        //文件操件菜单
+        menu = new String[] {
+                getResources().getString(R.string.file_menu_execute_plugin),
+                getResources().getString(R.string.file_menu_rename),
+                getResources().getString(R.string.file_menu_delete)
+        };
+
+        fileRenameDialog = new EditTextDialogImpl(this);
+        fileRenameDialog.setTextColor("#333333");
+        fileRenameDialog.setTitle(menu[1])
+                .setPositiveButton(getResources().getString(R.string.ok), ((d, w) -> {
+                    boolean b = currFile.renameTo(new File(currFile.getParent()
+                            + "/" + fileRenameDialog.getText()));
+                    if (b) {
+                        Toast.makeText(this, getResources().getString(R.string.file_rename_succeed),
+                                Toast.LENGTH_SHORT).show();
+                        updateFileList(currPathFile.getAbsolutePath());
+                    } else
+                        Toast.makeText(this, getResources().getString(R.string.file_rename_failure),
+                                Toast.LENGTH_SHORT).show();
+                }))
+                .setNegativeButton(getResources().getString(R.string.cancel), null);
+
+        fileDeleteDialog = new AlertDialog.Builder(this)
+                .setTitle(menu[2])
+                .setPositiveButton(R.string.yes, (d, w) -> {
+                    if (currFile.delete()) {
+                        Toast.makeText(this, getResources().getString(R.string.file_delete_succeed),
+                                Toast.LENGTH_SHORT).show();
+                        updateFileList(currPathFile.getAbsolutePath());
+                    } else
+                        Toast.makeText(this, getResources().getString(R.string.file_delete_failure),
+                                Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.no, null);
+
+        fileMenuDialog = new AlertDialog.Builder(this)
+                .setTitle(getResources().getString(R.string.file_menu_title))
+                .setIcon(R.mipmap.icon_launcher)
+                .setItems(menu, (dialog, which) -> {
+                    if (which == 0)
+                        pluginExecutor.execute(pluginsId, currFile);
+                    if (which == 1) {
+                        fileRenameDialog.setText(currFile.getName());
+                        fileRenameDialog.show();
+                        fileRenameDialog.requestFocus();
+//                        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                    } else if (which == 2) {
+                        fileDeleteDialog.setMessage(getResources().getString(R.string.file_delete_ask)
+                                .replace("%fileName%", currFile.getName()));
+                        fileDeleteDialog.show();
+                    }
+                });
+
         logWindow = new LogWindowImpl(this); // 日志窗口
 
         WidgetManager widgetManager = WidgetManagerImpl.instance();
@@ -141,6 +200,20 @@ public class FileListActivity extends BaseActivity {
         fileListAdapter = new FileListAdapter(this);
         recyclerView.setAdapter(fileListAdapter);
 
+        // 添加触摸监听器
+        recyclerView.addOnItemTouchListener(new OnRecyclerViewItemTouchListener(recyclerView) {
+            @Override
+            public void onItemClick(RecyclerView.ViewHolder vh, int position) {
+                handler.postDelayed(() -> onFileClickEvent(fileList.get(position)), 150);
+            }
+
+            @Override
+            public void onItemLongClick(RecyclerView.ViewHolder vh, int position) {
+                currFile = fileList.get(position);
+                fileMenuDialog.show();
+            }
+        });
+
         // 添加滚动监听器
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -148,9 +221,9 @@ public class FileListActivity extends BaseActivity {
                 super.onScrollStateChanged(recyclerView, newState);
                 // 当 RecyclerView 滚动结束时，记录滚动位置
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    if (currFile != null) {
+                    if (currPathFile != null) {
                         int position = linearLayoutManager.findLastCompletelyVisibleItemPosition();
-                        itemPositionMap.put(currFile.getAbsolutePath(), position);
+                        itemPositionMap.put(currPathFile.getAbsolutePath(), position);
                     }
                 }
             }
@@ -159,58 +232,15 @@ public class FileListActivity extends BaseActivity {
         // 添加更新数据监听器
         fileListAdapter.setOnUpdatedListener(() -> {
             // 数据更新结束时滚动到记录的位置
-            if (currFile != null) {
+            if (currPathFile != null) {
                 // 在返回父目录时移除子目录的记录
-                String path = currFile.getAbsolutePath();
+                String path = currPathFile.getAbsolutePath();
                 itemPositionMap.remove(path + "/" + this.lastPath);
-                this.lastPath = currFile.getName();
+                this.lastPath = currPathFile.getName();
 
                 Integer integer = itemPositionMap.get(path);
                 linearLayoutManager.scrollToPosition(integer!=null ? integer : 0);
             }
-        });
-
-        // 添加触摸监听器
-        fileListAdapter.setOnTouchListener((view, file, motionEvent) -> {
-            switch (motionEvent.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    // 记录手指触摸的位置与时间
-                    startX = (int) motionEvent.getX();
-                    startY = (int) motionEvent.getY();
-                    downTime = motionEvent.getDownTime();
-                    // 如果触模时间达到 MAX_LONG_PRESS_TIME 则调用长按事件
-                    /*handler.postDelayed(() -> pluginItemOnLongClickEvent(view, plugin),
-                            MAX_LONG_PRESS_TIME);*/
-                    break;
-
-                case MotionEvent.ACTION_MOVE:
-                    // 记录手指触摸的位置
-                    lastX = (int) motionEvent.getX();
-                    lastY = (int) motionEvent.getY();
-                    // 如果手指移动超出指定范围，则取消长按事件
-                    if (Math.abs(lastX-startX) > MAX_CLICK_RANGE
-                            || Math.abs(lastY-startY) > MAX_CLICK_RANGE) {
-                        handler.removeCallbacksAndMessages(null);
-                    }
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    // 获取手指抬起的时间
-                    upTime = motionEvent.getEventTime();
-                    // 如果手指触摸屏幕的时间小于 MAX_LONG_PRESS_TIME 则视为点击，取消长按并调用点击事件
-                    if (upTime-downTime < MAX_LONG_PRESS_TIME) {
-                        handler.removeCallbacksAndMessages(null);
-                        handler.postDelayed(() -> {
-                            fileOnClickEvent(file);
-                            view.performClick();
-                        }, 200);
-
-                    }
-                    break;
-            }
-
-            // 反回 false, 事件将会传递下去
-            return false;
         });
     }
 
@@ -218,10 +248,9 @@ public class FileListActivity extends BaseActivity {
      * 文件列表项的点击事件
      * @param file 选中的文件
      */
-    private void fileOnClickEvent(File file) {
+    private void onFileClickEvent(File file) {
         // 如果是文件夹，则显示该路径下的文件列表，如果是文件，则执行插件
         if (file.isDirectory()) {
-//            handler.postDelayed(() -> updateFileList(file.getAbsolutePath()), 70);
             updateFileList(file.getAbsolutePath());
         } else {
             // 执行插件
@@ -233,28 +262,28 @@ public class FileListActivity extends BaseActivity {
      * 更新文件列表
      */
     private void updateFileList(String path) {
+        fileList.clear();
         // 获取文件列表
         File file = new File(path);
         File[] files = file.listFiles();
 
-        currFile = file;
-        List<File> list = new ArrayList<>();
+        currPathFile = file;
 
         if (files != null)
-            list.addAll(Arrays.asList(files));
+            fileList.addAll(Arrays.asList(files));
 
         // 排序
-        FileUtils.sort(list);
+        FileUtils.sort(fileList);
 
         // 添加父级目录
         if (file.getAbsolutePath().equals(SDCardRootPath)) {
-            list.add(0, file);
+            fileList.add(0, file);
         } else {
-            list.add(0, file.getParentFile());
+            fileList.add(0, file.getParentFile());
         }
 
-        filePath.setText(currFile.getPath());
-        fileListAdapter.updateData(list);
+        filePath.setText(currPathFile.getPath());
+        fileListAdapter.updateData(fileList);
     }
 
     /**
@@ -263,8 +292,8 @@ public class FileListActivity extends BaseActivity {
     @Override
     public void onBackPressed() {
         // 如果当前目录与根目录一致，则退出，否则返回上一级目录
-        if (!currFile.getPath().equals(SDCardRootPath)){
-            File parentFile = currFile.getParentFile();
+        if (!currPathFile.getPath().equals(SDCardRootPath)){
+            File parentFile = currPathFile.getParentFile();
             if (parentFile != null) {
                 updateFileList(parentFile.getPath());
             }
